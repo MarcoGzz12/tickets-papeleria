@@ -3,7 +3,7 @@
    ===================================================================== */
 
 import { APP_NAME, LS_KEYS } from './config.js';
-import { createApi, saveConnection, clearConnection, setDemo, isDemo } from './api.js';
+import { createApi, getConnection, saveConnection, clearConnection, setDemo, isDemo } from './api.js';
 
 const ESTADOS = [
   { id: 'pendiente',  nombre: 'Por hacer',           icono: '📥', siguiente: 'Empezar' },
@@ -686,6 +686,8 @@ async function entrarApp(sesion) {
 }
 
 async function arrancar() {
+  // Con la conexión fija en config.js no hay nada que cambiar desde la app.
+  if (getConnection()?.fija) $$('[data-accion="cambiar-conexion"]').forEach(b => (b.hidden = true));
   try {
     estado.api = createApi();
   } catch (e) {
