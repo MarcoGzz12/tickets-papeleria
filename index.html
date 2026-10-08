@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Trabajos de la papelería</title>
+  <meta name="theme-color" content="#f4efe4">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- ============ CONEXIÓN (solo la primera vez) ============ -->
+  <section id="pantalla-conexion" class="pantalla-centro" hidden>
+    <form class="tarjeta-sola" id="form-conexion">
+      <div class="marca-grande">🧾</div>
+      <h1>Conectar con Supabase</h1>
+      <p class="sutil">Pega los datos de <b>Project Settings → API</b>. Se guardan solo en este dispositivo.</p>
+      <label>Project URL <input name="url" type="url" placeholder="https://xxxx.supabase.co" required></label>
+      <label>Clave anon / publishable <input name="key" required placeholder="eyJ… o sb_publishable_…"></label>
+      <button class="btn btn-primario" type="submit">Conectar</button>
+      <button class="btn btn-fantasma" type="button" id="btn-demo">Probar en modo demo</button>
+    </form>
+  </section>
+
+  <!-- ============ LOGIN ============ -->
+  <section id="pantalla-login" class="pantalla-centro" hidden>
+    <form class="tarjeta-sola" id="form-login">
+      <div class="marca-grande">🧾</div>
+      <h1>Trabajos de la papelería</h1>
+      <label>Correo <input name="email" type="email" autocomplete="username" required></label>
+      <label>Contraseña <input name="password" type="password" autocomplete="current-password" required></label>
+      <p class="error" id="login-error" hidden></p>
+      <button class="btn btn-primario" type="submit">Entrar</button>
+      <button class="btn btn-fantasma" type="button" data-accion="cambiar-conexion">Cambiar conexión</button>
+    </form>
+  </section>
+
+  <!-- ============ APP ============ -->
+  <section id="pantalla-app" hidden>
+    <header class="barra">
+      <div class="marca">
+        <span class="marca-icono">🧾</span>
+        <div>
+          <h1 id="app-titulo">Trabajos de la papelería</h1>
+          <p class="sutil" id="app-fecha"></p>
+        </div>
+        <span class="chip-demo" id="chip-demo" hidden>MODO DEMO</span>
+      </div>
+      <div class="barra-acciones">
+        <button class="btn btn-icono" data-accion="ajustes" title="Ajustes" aria-label="Ajustes">⚙</button>
+        <button class="btn btn-primario" data-accion="nuevo">＋ Nuevo ticket</button>
+      </div>
+    </header>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="filtros">
+      <input type="search" id="buscar" placeholder="Buscar cliente, trabajo o folio…">
+      <div class="chips-resp" id="filtro-responsables"></div>
+      <div class="vista-toggle" role="group" aria-label="Vista de tarjetas">
+        <button data-vista="compacta" title="Tarjetas compactas con miniatura">▤ Compacta</button>
+        <button data-vista="fotos" title="Tarjetas con foto grande e instrucciones">▣ Con fotos</button>
+      </div>
+    </div>
+
+    <main class="tablero" id="tablero"></main>
+  </section>
+
+  <!-- ============ VER TICKET ============ -->
+  <dialog id="dlg-ver" class="dlg dlg-ancho"></dialog>
+
+  <!-- ============ CREAR / EDITAR TICKET ============ -->
+  <dialog id="dlg-editar" class="dlg">
+    <form id="form-ticket" method="dialog">
+      <header class="dlg-cabeza">
+        <h2 id="editar-titulo">Nuevo ticket</h2>
+        <button type="button" class="btn btn-icono" data-cerrar aria-label="Cerrar">✕</button>
+      </header>
+      <div class="dlg-cuerpo form-grid">
+        <label class="col-2">¿Quién lo pidió? (cliente) <input name="cliente" required placeholder="Nombre del cliente o empresa"></label>
+        <label>Teléfono <input name="telefono" type="tel" placeholder="Opcional"></label>
+        <label class="col-3">Trabajo <input name="trabajo" required placeholder="Ej. 500 tarjetas de presentación"></label>
+        <label class="col-3">¿Qué se tiene que hacer? (instrucciones)
+          <textarea name="instrucciones" rows="5" required placeholder="Papel, tamaño, cantidad, acabados, colores, detalles a revisar…"></textarea>
+        </label>
+
+        <div class="col-3">
+          <span class="etiqueta">Fotos</span>
+          <div class="zona-fotos" id="zona-fotos">
+            <div class="fotos-previas" id="fotos-previas"></div>
+            <label class="soltar-foto">
+              <input type="file" accept="image/*" multiple id="input-fotos" hidden>
+              <span class="soltar-icono">📷</span>
+              <span>Toca para tomar o subir foto<br><small>o arrástrala aquí</small></span>
+            </label>
+          </div>
+        </div>
+
+        <label>Fecha de inicio <input name="fecha_inicio" type="date" required></label>
+        <label>Fecha de entrega <input name="fecha_entrega" type="date" required></label>
+        <label>Responsable <select name="responsable_id"></select></label>
+
+        <div class="col-2">
+          <span class="etiqueta">Estado</span>
+          <div class="segmentado" id="seg-estado"></div>
+        </div>
+        <label class="toggle-urgente">
+          <input type="checkbox" name="urgente"> <span>🔥 Urgente</span>
+        </label>
+
+        <p class="error col-3" id="ticket-error" hidden></p>
+      </div>
+      <footer class="dlg-pie">
+        <button type="button" class="btn btn-peligro" id="btn-borrar-ticket" hidden>Borrar</button>
+        <span class="espacio"></span>
+        <button type="button" class="btn btn-fantasma" data-cerrar>Cancelar</button>
+        <button type="submit" class="btn btn-primario" id="btn-guardar-ticket">Guardar ticket</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ AJUSTES ============ -->
+  <dialog id="dlg-ajustes" class="dlg">
+    <header class="dlg-cabeza">
+      <h2>Ajustes</h2>
+      <button type="button" class="btn btn-icono" data-cerrar aria-label="Cerrar">✕</button>
+    </header>
+    <div class="dlg-cuerpo">
+      <h3>Responsables</h3>
+      <p class="sutil">Quienes pueden quedar a cargo de un trabajo. Si alguien ya no está, desactívalo: sus tickets anteriores conservan su nombre.</p>
+      <ul class="lista-resp" id="lista-resp"></ul>
+      <form class="nuevo-resp" id="form-resp">
+        <input name="nombre" placeholder="Nombre del responsable" required>
+        <div class="paleta" id="paleta-nuevo"></div>
+        <button class="btn btn-primario" type="submit">Agregar</button>
+      </form>
+
+      <h3>Sesión</h3>
+      <p class="sutil" id="info-sesion"></p>
+      <div class="fila-botones">
+        <button class="btn btn-fantasma" data-accion="salir">Cerrar sesión</button>
+        <button class="btn btn-fantasma" data-accion="cambiar-conexion">Cambiar conexión</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ============ FOTO GRANDE ============ -->
+  <div class="visor" id="visor" hidden><img alt=""></div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- ============ HOJA IMPRIMIBLE ============ -->
+  <div id="hoja-impresion"></div>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
